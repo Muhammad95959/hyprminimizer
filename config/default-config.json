@@ -14,5 +14,6 @@
   "useDBusTray": true,
   "dbusServiceName": "org.hyprminimizer",
   "enableNotifications": true,
-  "notificationCommand": "notify-send"
+  "notificationCommand": "notify-send",
+  "restoreToCurrentWorkspace": true
 }

@@ -53,7 +53,8 @@ export class Config {
       useDBusTray: true,
       dbusServiceName: 'org.hyprminimizer',
       stackBaseDirectory: '/tmp',
-      enableNotifications: true
+      enableNotifications: true,
+      restoreToCurrentWorkspace: true
     };
   }
 

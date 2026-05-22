@@ -99,10 +99,13 @@ export class WindowManager {
     const entry = this.stack.pop();
     if (!entry) return;
     const addr = entry.address || entry;
+    const originalWs = entry.workspace;
 
-    const currentWs = await this.socket.getActiveWorkspace();
-    console.error(`[restore] addr=${addr} workspace=${currentWs}`);
-    const result = await this.socket.restoreWindow(addr, currentWs);
+    const targetWs = this.config.get('restoreToCurrentWorkspace')
+      ? await this.socket.getActiveWorkspace()
+      : originalWs;
+    console.error(`[restore] addr=${addr} workspace=${targetWs}`);
+    const result = await this.socket.restoreWindow(addr, targetWs);
     console.error(`[restore] result=${result.trim()}`);
 
     if (result.trim() === 'ok') {
@@ -126,7 +129,10 @@ export class WindowManager {
     this.config.saveMinimizedState(minimized);
     this.stack.remove(window.address);
 
-    const result = await this.socket.restoreWindow(window.address, window.workspace);
+    const targetWs = this.config.get('restoreToCurrentWorkspace')
+      ? await this.socket.getActiveWorkspace()
+      : window.workspace;
+    const result = await this.socket.restoreWindow(window.address, targetWs);
     if (result.trim() !== 'ok') {
       console.error('Failed to restore window:', result);
       return false;
@@ -157,7 +163,10 @@ export class WindowManager {
       const index = parseInt(selected.split('.')[0]) - 1;
       if (index >= 0 && index < minimized.length) {
         const window = minimized[index];
-        const result = await this.socket.restoreWindow(window.address, window.workspace);
+        const targetWs = this.config.get('restoreToCurrentWorkspace')
+          ? await this.socket.getActiveWorkspace()
+          : window.workspace;
+        const result = await this.socket.restoreWindow(window.address, targetWs);
         if (result.trim() === 'ok') {
           minimized.splice(index, 1);
           this.config.saveMinimizedState(minimized);
