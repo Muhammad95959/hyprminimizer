@@ -55,8 +55,10 @@ export class WindowManager {
   }
 
   async minimizeWithTray(active) {
+    const iconPack = this.config.get('iconPack') || {};
+    const iconName = iconPack[active.class] || active.class || 'hypr-minimizer';
     const tray = await startTraySession(this.config, {
-      iconName: active.class || 'hypr-minimizer',
+      iconName,
       title: active.title || 'Minimized Window',
       tooltip: `[${active.class}] ${active.title}`,
       onRestore: async () => {

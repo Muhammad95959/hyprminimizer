@@ -54,7 +54,8 @@ export class Config {
       dbusServiceName: 'org.hyprminimizer',
       stackBaseDirectory: '/tmp',
       enableNotifications: true,
-      restoreToCurrentWorkspace: true
+      restoreToCurrentWorkspace: true,
+      iconPack: {}
     };
   }
 
