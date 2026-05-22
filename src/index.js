@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import minimist from 'minimist';
 import WindowManager from './window-manager.js';
 import Config from './config.js';
