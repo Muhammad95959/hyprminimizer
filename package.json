@@ -1,0 +1,27 @@
+{
+  "name": "hyprminimizer",
+  "version": "0.1.0",
+  "description": "A Node.js utility to add true minimize to tray functionality to Hyprland using Lua API",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "minimize": "node src/index.js minimize",
+    "restore-last": "node src/index.js restore-last",
+    "menu": "node src/index.js menu"
+  },
+  "keywords": [
+    "hyprland",
+    "lua",
+    "minimize",
+    "tray",
+    "wayland"
+  ],
+  "author": "",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "dbus-next": "^0.10.2",
+    "minimist": "^1.2.8"
+  }
+}

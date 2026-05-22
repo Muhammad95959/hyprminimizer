@@ -1,0 +1,18 @@
+{
+  "specialWorkspace": "minimized",
+  "trayModule": "systemtray",
+  "restoreLauncher": "rofi",
+  "restoreLauncherArgs": "-dmenu -p \"Restore window:\"",
+  "maxMinimizedWindows": 50,
+  "excludeWindowClasses": [
+    "waybar",
+    "dunst",
+    "swaylock",
+    "hyprpicker",
+    "wlogout"
+  ],
+  "useDBusTray": true,
+  "dbusServiceName": "org.hyprminimizer",
+  "enableNotifications": true,
+  "notificationCommand": "notify-send"
+}
