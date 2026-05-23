@@ -4,9 +4,18 @@ Minimize windows to tray for Hyprland using D-Bus StatusNotifierItem.
 
 ## Install
 
+**AUR**:
 ```sh
-make install   # copies to /opt/hyprminimizer, creates /usr/local/bin/hyprminimizer
-make uninstall # removes both
+yay -S hyprminimizer-git
+# or
+paru -S hyprminimizer-git
+```
+
+**Manual**:
+```sh
+git clone https://github.com/Muhammad95959/hyprminimizer
+cd hyprminimizer
+sudo make install
 ```
 
 ## Usage
@@ -15,7 +24,7 @@ make uninstall # removes both
 hyprminimizer [COMMAND]
 
 Commands:
-  minimize [address]     Minimize the active window (or by window address)
+  minimize [address]    Minimize the active window (or by window address)
   restore-last          Restore the last minimized window
   menu                  Show interactive restore menu (via rofi)
   list                  List all minimized windows

@@ -2,7 +2,7 @@
 
 PREFIX ?= /usr/local
 BIN_DIR = $(PREFIX)/bin
-INSTALL_DIR = /opt/hyprminimizer
+INSTALL_DIR = /usr/lib/hyprminimizer
 
 help:
 	@echo "hyprminimizer - Makefile Commands"
