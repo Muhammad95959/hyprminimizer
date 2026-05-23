@@ -45,15 +45,13 @@ export class Config {
   getDefaults() {
     return {
       specialWorkspace: 'minimized',
-      trayModule: 'systemtray',
       restoreLauncher: 'rofi',
       restoreLauncherArgs: '-dmenu -p "Restore window:"',
       maxMinimizedWindows: 50,
-      excludeWindowClasses: ['waybar', 'dunst', 'swaylock'],
+      excludeWindowClasses: ['waybar', 'mako', 'hyprlock'],
       useDBusTray: true,
       dbusServiceName: 'org.hyprminimizer',
       stackBaseDirectory: '/tmp',
-      enableNotifications: true,
       restoreToCurrentWorkspace: true,
       iconPack: {}
     };
