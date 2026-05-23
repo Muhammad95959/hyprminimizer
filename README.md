@@ -24,7 +24,7 @@ sudo make install
 hyprminimizer [COMMAND]
 
 Commands:
-  minimize [address]     Minimize the active window (or by window address)
+  minimize [address]    Minimize the active window (or by window address)
   restore-last          Restore the last minimized window
   menu                  Show interactive restore menu (via rofi)
   list                  List all minimized windows
@@ -105,3 +105,7 @@ hl.bind("SUPER + SHIFT + M",   restore_minimized)
 - Hyprland 0.55+ (Lua API + socket IPC)
 - Node.js 16+
 - D-Bus session bus (for tray)
+
+## Acknowledgements
+
+This project is inspired by [hyprland-minimizer](https://github.com/denisdubochevalier/hyprland-minimizer) by denisdubochevalier.
