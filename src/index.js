@@ -119,13 +119,13 @@ CONFIGURATION:
 
 KEYBINDINGS (hyprland.lua):
   -- Minimize active window
-  hl.bind("$mainMod + M", hl.dsp.exec_cmd("hyprminimizer minimize"))
+  hl.bind("SUPER + M", hl.dsp.exec_cmd("hyprminimizer minimize"))
 
   -- Restore last minimized window
-  hl.bind("$mainMod SHIFT + M", hl.dsp.exec_cmd("hyprminimizer restore-last"))
+  hl.bind("SUPER SHIFT + M", hl.dsp.exec_cmd("hyprminimizer restore-last"))
 
   -- Interactive restore menu
-  hl.bind("$mainMod + C", hl.dsp.exec_cmd("hyprminimizer menu"))
+  hl.bind("SUPER + C", hl.dsp.exec_cmd("hyprminimizer menu"))
   `);
 }
 

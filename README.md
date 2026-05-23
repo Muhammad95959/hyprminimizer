@@ -27,14 +27,28 @@ Options:
   --generate-config     Generate default config
 ```
 
-Keybinds (`hyprland.lua`):
+## hyprland.lua example
+
 ```lua
-hl.bind("$mainMod + M",             hl.dsp.exec_cmd("hyprminimizer minimize"))
-hl.bind("$mainMod SHIFT + M",       hl.dsp.exec_cmd("hyprminimizer restore-last"))
-hl.bind("$mainMod + C",             hl.dsp.exec_cmd("hyprminimizer menu"))
+local function restore_minimized()
+  local minimized = {}
+  for _, win in ipairs(hl.get_windows()) do
+    if win.workspace ~= nil and win.workspace.name == "special:minimized" then
+      table.insert(minimized, win)
+    end
+  end
+  if #minimized > 1 then
+    hl.dispatch(hl.dsp.exec_cmd("hyprminimizer menu"))
+  else
+    hl.dispatch(hl.dsp.exec_cmd("hyprminimizer restore-last"))
+  end
+end
+
+hl.bind("SUPER + M",           hl.dsp.exec_cmd("hyprminimizer"))
+hl.bind("SUPER + SHIFT + M",   restore_minimized)
 ```
 
-Get a window address from `hyprctl clients` or `hyprminimizer list` and minimize it directly:
+Minimize a window by address (get it from `hyprctl clients`):
 
 ```sh
 hyprminimizer minimize 0x12345678
