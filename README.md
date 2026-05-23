@@ -15,7 +15,7 @@ make uninstall # removes both
 hyprminimizer [COMMAND]
 
 Commands:
-  minimize              Minimize the active window (default)
+  minimize [address]     Minimize the active window (or by window address)
   restore-last          Restore the last minimized window
   menu                  Show interactive restore menu (via rofi)
   list                  List all minimized windows
@@ -32,6 +32,12 @@ Keybinds (`hyprland.lua`):
 hl.bind("$mainMod + M",             hl.dsp.exec_cmd("hyprminimizer minimize"))
 hl.bind("$mainMod SHIFT + M",       hl.dsp.exec_cmd("hyprminimizer restore-last"))
 hl.bind("$mainMod + C",             hl.dsp.exec_cmd("hyprminimizer menu"))
+```
+
+Get a window address from `hyprctl clients` or `hyprminimizer list` and minimize it directly:
+
+```sh
+hyprminimizer minimize 0x12345678
 ```
 
 ## Configuration

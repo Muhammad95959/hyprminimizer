@@ -38,28 +38,29 @@ async function main() {
 
     switch (command) {
       case 'minimize':
-        await manager.minimizeActiveWindow();
+        if (args._[1]) {
+          const addr = typeof args._[1] === 'number' ? '0x' + BigInt(args._[1]).toString(16) : args._[1];
+          await manager.minimizeWindowByAddress(addr);
+        } else {
+          await manager.minimizeActiveWindow();
+        }
         break;
 
       case 'restore-last':
         await manager.restoreLastWindow();
         process.exit(0);
-        break;
 
       case 'menu':
         await manager.showRestoreMenu();
         process.exit(0);
-        break;
 
       case 'list':
         await manager.listMinimized();
         process.exit(0);
-        break;
 
       case 'help':
         showHelp();
         process.exit(0);
-        break;
 
       case undefined:
         await manager.minimizeActiveWindow();
@@ -85,7 +86,7 @@ USAGE:
   hyprminimizer [COMMAND] [OPTIONS]
 
 COMMANDS:
-  minimize              Minimize the active window (default)
+  minimize [address]    Minimize the active window (or by window address)
   restore-last          Restore the last minimized window
   menu                  Show interactive menu to restore a window
   list                  List all minimized windows
@@ -99,6 +100,9 @@ OPTIONS:
 EXAMPLES:
   # Minimize active window (with tray if enabled)
   hyprminimizer
+
+  # Minimize a specific window by address
+  hyprminimizer minimize 0x12345678
 
   # Restore last minimized window
   hyprminimizer restore-last

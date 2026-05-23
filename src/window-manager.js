@@ -15,6 +15,45 @@ export class WindowManager {
     await this.socket.connect();
   }
 
+  async minimizeWindowByAddress(address) {
+    const all = await this.socket.getAllWindows();
+    const window = all.find(w => w.address === address);
+    if (!window) {
+      console.error(`No window found with address: ${address}`);
+      return false;
+    }
+
+    const excluded = this.config.get('excludeWindowClasses') || [];
+    if (excluded.includes(window.class)) {
+      console.log(`Skipping excluded window class: ${window.class}`);
+      return false;
+    }
+
+    if (window.workspace?.name === 'special:minimized') {
+      console.log('Window is already minimized');
+      return false;
+    }
+
+    const result = await this.socket.minimizeWindow(address);
+    if (result.trim() !== 'ok') {
+      console.error('Failed to minimize window:', result);
+      return false;
+    }
+
+    const originalWorkspace = window.workspace?.id || 1;
+    this.stack.push(window.address, originalWorkspace);
+    this.addToMinimizedList(window);
+    console.log(`\u2713 Minimized [${window.class}] ${window.title}`);
+
+    if (this.config.get('useDBusTray')) {
+      await this.minimizeWithTray(window).catch(err => {
+        console.error('Tray setup failed:', err.message);
+      });
+    }
+
+    return true;
+  }
+
   async minimizeActiveWindow() {
     const active = await this.socket.getActiveWindow();
 

@@ -51,6 +51,10 @@ export class HyprlandSocket {
     return this.command('/dispatch hl.dsp.window.move({workspace = "special:minimized", follow = false})');
   }
 
+  async minimizeWindow(address) {
+    return this.command(`/dispatch hl.dsp.window.move({workspace = "special:minimized", window = "address:${address}", follow = false})`);
+  }
+
   async restoreWindow(address, workspace) {
     const move = `/dispatch hl.dsp.window.move({workspace = ${workspace}, window = "address:${address}", follow = false})`;
     const focus = `/dispatch hl.dsp.focus({window = "address:${address}"})`;
