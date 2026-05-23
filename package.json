@@ -21,7 +21,7 @@
   "author": "",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "dbus-next": "^0.10.2",
+    "@deltachat/dbus-next": "^1.0.1",
     "minimist": "^1.2.8"
   }
 }

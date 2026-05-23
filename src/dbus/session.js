@@ -1,4 +1,4 @@
-import dbusNext from 'dbus-next';
+import dbusNext from '@deltachat/dbus-next';
 import { StatusNotifierItem } from './notifier-item.js';
 import { DbusMenu } from './dbus-menu.js';
 

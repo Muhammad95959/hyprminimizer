@@ -1,4 +1,4 @@
-import dbusNext from 'dbus-next';
+import dbusNext from '@deltachat/dbus-next';
 const Interface = dbusNext.interface.Interface;
 const { Variant } = dbusNext;
 
