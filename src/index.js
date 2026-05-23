@@ -3,8 +3,16 @@ import minimist from 'minimist';
 import WindowManager from './window-manager.js';
 import Config from './config.js';
 
+const KNOWN_FLAGS = new Set(['h', 'help', 'generate-config']);
+
+function hasUnknownFlags(args) {
+  return Object.keys(args).some(k => k !== '_' && !KNOWN_FLAGS.has(k));
+}
+
 async function main() {
-  const args = minimist(process.argv.slice(2));
+  const args = minimist(process.argv.slice(2), {
+    boolean: ['h', 'help', 'generate-config'],
+  });
   const command = args._[0];
 
   if (args.help || args.h) {
@@ -16,6 +24,12 @@ async function main() {
     const config = new Config();
     await config.generateConfigFile();
     process.exit(0);
+  }
+
+  if (hasUnknownFlags(args)) {
+    console.error('Error: Unknown flag(s) detected.');
+    showHelp();
+    process.exit(1);
   }
 
   try {
@@ -39,6 +53,11 @@ async function main() {
 
       case 'list':
         await manager.listMinimized();
+        process.exit(0);
+        break;
+
+      case 'help':
+        showHelp();
         process.exit(0);
         break;
 
@@ -70,6 +89,7 @@ COMMANDS:
   restore-last          Restore the last minimized window
   menu                  Show interactive menu to restore a window
   list                  List all minimized windows
+  help                  Show this help message
   generate-config       Generate a default configuration file
 
 OPTIONS:
@@ -93,15 +113,15 @@ CONFIGURATION:
   Config file location: ~/.config/hyprminimizer/config.json
   State file location: ~/.config/hyprminimizer/minimized-windows.json
 
-KEYBINDINGS (hyprland.conf):
-  # Minimize active window
-  bind = $mainMod, M, exec, hyprminimizer
+KEYBINDINGS (hyprland.lua):
+  -- Minimize active window
+  hl.bind("$mainMod + M", hl.dsp.exec_cmd("hyprminimizer minimize"))
 
-  # Restore last minimized window
-  bind = $mainMod SHIFT, M, exec, hyprminimizer restore-last
+  -- Restore last minimized window
+  hl.bind("$mainMod SHIFT + M", hl.dsp.exec_cmd("hyprminimizer restore-last"))
 
-  # Interactive restore menu
-  bind = $mainMod, C, exec, hyprminimizer menu
+  -- Interactive restore menu
+  hl.bind("$mainMod + C", hl.dsp.exec_cmd("hyprminimizer menu"))
   `);
 }
 
