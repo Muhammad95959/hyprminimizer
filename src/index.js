@@ -3,24 +3,17 @@ import minimist from 'minimist';
 import WindowManager from './window-manager.js';
 import Config from './config.js';
 
-const KNOWN_FLAGS = new Set(['h', 'help', 'generate-config']);
+const KNOWN_FLAGS = new Set([]);
 
 function hasUnknownFlags(args) {
   return Object.keys(args).some(k => k !== '_' && !KNOWN_FLAGS.has(k));
 }
 
 async function main() {
-  const args = minimist(process.argv.slice(2), {
-    boolean: ['h', 'help', 'generate-config'],
-  });
+  const args = minimist(process.argv.slice(2));
   const command = args._[0];
 
-  if (args.help || args.h) {
-    showHelp();
-    process.exit(0);
-  }
-
-  if (args['generate-config'] || command === 'generate-config') {
+  if (command === 'generate-config') {
     const config = new Config();
     await config.generateConfigFile();
     process.exit(0);
@@ -92,10 +85,6 @@ COMMANDS:
   list                  List all minimized windows
   help                  Show this help message
   generate-config       Generate a default configuration file
-
-OPTIONS:
-  -h, --help           Show this help message
-  --generate-config    Generate default config file
 
 EXAMPLES:
   # Minimize active window (with tray if enabled)

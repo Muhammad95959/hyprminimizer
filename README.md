@@ -24,16 +24,18 @@ sudo make install
 hyprminimizer [COMMAND]
 
 Commands:
-  minimize [address]    Minimize the active window (or by window address)
+  minimize [address]     Minimize the active window (or by window address)
   restore-last          Restore the last minimized window
   menu                  Show interactive restore menu (via rofi)
   list                  List all minimized windows
   help                  Show this help message
   generate-config       Generate default config at ~/.config/hyprminimizer/config.json
+```
 
-Options:
-  -h, --help            Show help
-  --generate-config     Generate default config
+Minimize a window by address (get it from `hyprctl clients`):
+
+```sh
+hyprminimizer minimize 0x12345678
 ```
 
 ## hyprland.lua example
@@ -55,12 +57,6 @@ end
 
 hl.bind("SUPER + M",           hl.dsp.exec_cmd("hyprminimizer"))
 hl.bind("SUPER + SHIFT + M",   restore_minimized)
-```
-
-Minimize a window by address (get it from `hyprctl clients`):
-
-```sh
-hyprminimizer minimize 0x12345678
 ```
 
 ## Configuration
