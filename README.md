@@ -2,6 +2,10 @@
 
 Minimize windows to tray for Hyprland using D-Bus StatusNotifierItem.
 
+## Demo
+
+https://github.com/user-attachments/assets/0cf51501-41b0-4f16-8236-04b931969584
+
 ## Install
 
 **AUR**:
