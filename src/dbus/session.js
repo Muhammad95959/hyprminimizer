@@ -12,12 +12,6 @@ export async function startTraySession(config, { iconName, title, tooltip, onRes
   const serviceName = config.get('dbusServiceName') + `_p${process.pid}`;
   const objPath = '/StatusNotifierItem';
 
-  function doCleanup() {
-    // disconnect is intentionally skipped to avoid async
-    // dbus-next errors during shutdown. The OS will close
-    // the socket on process exit.
-  }
-
   let exitPending = false;
 
   const sni = new StatusNotifierItem({
@@ -29,13 +23,11 @@ export async function startTraySession(config, { iconName, title, tooltip, onRes
       if (exitPending) return;
       exitPending = true;
       if (onRestore) await onRestore();
-      doCleanup();
       setImmediate(() => process.exit(0));
     },
     onSecondaryActivate: async () => {
       if (exitPending) return;
       exitPending = true;
-      doCleanup();
       setImmediate(() => process.exit(0));
     },
   });
@@ -51,7 +43,6 @@ export async function startTraySession(config, { iconName, title, tooltip, onRes
       if (exitPending) return;
       exitPending = true;
       if (item.label === 'Restore' && onRestore) await onRestore();
-      doCleanup();
       setImmediate(() => process.exit(0));
     },
   });
@@ -64,8 +55,6 @@ export async function startTraySession(config, { iconName, title, tooltip, onRes
   const watcher = obj.getInterface(WATCHER_IFACE);
 
   await watcher.RegisterStatusNotifierItem(serviceName);
-
-  return { bus, sni, menu, cleanup: doCleanup };
 }
 
 export default startTraySession;

@@ -3,12 +3,6 @@ import minimist from 'minimist';
 import WindowManager from './window-manager.js';
 import Config from './config.js';
 
-const KNOWN_FLAGS = new Set([]);
-
-function hasUnknownFlags(args) {
-  return Object.keys(args).some(k => k !== '_' && !KNOWN_FLAGS.has(k));
-}
-
 async function main() {
   const args = minimist(process.argv.slice(2));
   const command = args._[0];
@@ -17,12 +11,6 @@ async function main() {
     const config = new Config();
     await config.generateConfigFile();
     process.exit(0);
-  }
-
-  if (hasUnknownFlags(args)) {
-    console.error('Error: Unknown flag(s) detected.');
-    showHelp();
-    process.exit(1);
   }
 
   try {

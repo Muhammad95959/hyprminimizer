@@ -38,15 +38,10 @@ export class StatusNotifierItem extends Interface {
     await this._onSecondaryActivate();
   }
 
-  async ContextMenu(x, y) {
-    if (this._onContextMenu) await this._onContextMenu(x, y);
-  }
+  async ContextMenu(x, y) {}
 
   async Scroll(delta, direction) {}
 
-  NewTitle() {}
-  NewIcon() {}
-  NewToolTip() {}
 }
 
 StatusNotifierItem.configureMembers({

@@ -1,28 +1,19 @@
 import { execSync } from 'child_process';
 import HyprlandSocket from './hyprland-socket.js';
 import Config from './config.js';
-import Stack from './stack.js';
 import { startTraySession } from './dbus/session.js';
 
 export class WindowManager {
   constructor() {
     this.socket = new HyprlandSocket();
     this.config = new Config();
-    this.stack = new Stack(this.config);
   }
 
   async init() {
     await this.socket.connect();
   }
 
-  async minimizeWindowByAddress(address) {
-    const all = await this.socket.getAllWindows();
-    const window = all.find(w => w.address === address);
-    if (!window) {
-      console.error(`No window found with address: ${address}`);
-      return false;
-    }
-
+  async #minimizeWindow(window, socketCmd) {
     const excluded = this.config.get('excludeWindowClasses') || [];
     if (excluded.includes(window.class)) {
       console.log(`Skipping excluded window class: ${window.class}`);
@@ -34,16 +25,14 @@ export class WindowManager {
       return false;
     }
 
-    const result = await this.socket.minimizeWindow(address);
+    const result = await socketCmd();
     if (result.trim() !== 'ok') {
       console.error('Failed to minimize window:', result);
       return false;
     }
 
-    const originalWorkspace = window.workspace?.id || 1;
-    this.stack.push(window.address, originalWorkspace);
     this.addToMinimizedList(window);
-    console.log(`\u2713 Minimized [${window.class}] ${window.title}`);
+    console.log(`✓ Minimized [${window.class}] ${window.title}`);
 
     if (this.config.get('useDBusTray')) {
       await this.minimizeWithTray(window).catch(err => {
@@ -54,134 +43,92 @@ export class WindowManager {
     return true;
   }
 
+  async minimizeWindowByAddress(address) {
+    const all = await this.socket.getAllWindows();
+    const window = all.find(w => w.address === address);
+    if (!window) {
+      console.error(`No window found with address: ${address}`);
+      return false;
+    }
+    return this.#minimizeWindow(window, () => this.socket.minimizeWindow(address));
+  }
+
   async minimizeActiveWindow() {
     const active = await this.socket.getActiveWindow();
-
     if (!active || !active.address) {
       console.error('No active window to minimize');
       return false;
     }
-
-    const excluded = this.config.get('excludeWindowClasses') || [];
-    if (excluded.includes(active.class)) {
-      console.log(`Skipping excluded window class: ${active.class}`);
-      return false;
-    }
-
-    if (active.workspace?.name === 'special:minimized') {
-      console.log('Window is already minimized');
-      return false;
-    }
-
-    const result = await this.socket.minimizeActiveWindow();
-    if (result.trim() !== 'ok') {
-      console.error('Failed to minimize window:', result);
-      return false;
-    }
-
-    const originalWorkspace = active.workspace?.id || 1;
-    this.stack.push(active.address, originalWorkspace);
-    this.addToMinimizedList(active);
-    console.log(`✓ Minimized [${active.class}] ${active.title}`);
-
-    if (this.config.get('useDBusTray')) {
-      await this.minimizeWithTray(active).catch(err => {
-        console.error('Tray setup failed:', err.message);
-      });
-    }
-
-    return true;
+    return this.#minimizeWindow(active, () => this.socket.minimizeActiveWindow());
   }
 
-  async minimizeWithTray(active) {
+  async minimizeWithTray(window) {
     const iconPack = this.config.get('iconPack') || {};
-    const iconName = iconPack[active.class] || active.class || 'hypr-minimizer';
-    const tray = await startTraySession(this.config, {
-      iconName,
-      title: active.title || 'Minimized Window',
-      tooltip: `[${active.class}] ${active.title}`,
-      onRestore: async () => {
-        await this._restoreLastFromStack();
-      },
-    });
-
+    const iconName = iconPack[window.class] || window.class || 'hypr-minimizer';
+    
     let exiting = false;
-    const cleanupAndExit = async () => {
+    const cleanup = async () => {
       if (exiting) return;
       exiting = true;
-      tray.cleanup();
       setImmediate(() => process.exit(0));
     };
 
-    process.on('SIGINT', () => { cleanupAndExit(); });
-    process.on('SIGTERM', () => { cleanupAndExit(); });
+    await startTraySession(this.config, {
+      iconName,
+      title: window.title || 'Minimized Window',
+      tooltip: `[${window.class}] ${window.title}`,
+      onRestore: async () => {
+        await this._restoreLastFromStack();
+        await cleanup();
+      },
+    });
 
-    // Poll: if the minimized window is no longer on special:minimized
-    // (e.g. manually restored), clean up and exit.
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+
+    // Poll: if minimized window is manually restored, cleanup and exit
     const pollInterval = setInterval(async () => {
-      const entry = this.stack.readStack().pop();
-      if (!entry) { cleanupAndExit(); return; }
-      let addr;
-      try { addr = JSON.parse(entry).address; } catch { addr = entry; }
-      const minimized = await this.socket.getMinimizedWindows();
-      const stillThere = minimized.some(w => w.address === addr);
-      if (!stillThere) {
-        this.stack.remove(addr);
-        cleanupAndExit();
+      const minimized = this.config.loadMinimizedState();
+      if (!minimized.some(w => w.address === window.address)) {
+        clearInterval(pollInterval);
+        await cleanup();
       }
     }, 2000);
 
     // Keep process alive
     await new Promise(() => {});
-    clearInterval(pollInterval);
   }
 
-  async _restoreLastFromStack() {
-    const entry = this.stack.pop();
-    if (!entry) return;
-    const addr = entry.address || entry;
-    const originalWs = entry.workspace;
-
-    const targetWs = this.config.get('restoreToCurrentWorkspace')
-      ? await this.socket.getActiveWorkspace()
-      : originalWs;
-    console.error(`[restore] addr=${addr} workspace=${targetWs}`);
-    const result = await this.socket.restoreWindow(addr, targetWs);
-    console.error(`[restore] result=${result.trim()}`);
-
-    if (result.trim() === 'ok') {
-      const minimized = this.config.loadMinimizedState();
-      const idx = minimized.findIndex(w => w.address === addr);
-      if (idx >= 0) {
-        minimized.splice(idx, 1);
-        this.config.saveMinimizedState(minimized);
-      }
-    }
-  }
-
-  async restoreLastWindow() {
-    const minimized = this.config.loadMinimizedState();
-    if (minimized.length === 0) {
-      console.log('No minimized windows to restore');
-      return false;
-    }
-
-    const window = minimized.pop();
-    this.config.saveMinimizedState(minimized);
-    this.stack.remove(window.address);
-
+  async #restoreWindow(window) {
     const targetWs = this.config.get('restoreToCurrentWorkspace')
       ? await this.socket.getActiveWorkspace()
       : window.workspace;
+    
     const result = await this.socket.restoreWindow(window.address, targetWs);
     if (result.trim() !== 'ok') {
       console.error('Failed to restore window:', result);
       return false;
     }
 
+    const minimized = this.config.loadMinimizedState();
+    const idx = minimized.findIndex(w => w.address === window.address);
+    if (idx >= 0) {
+      minimized.splice(idx, 1);
+      this.config.saveMinimizedState(minimized);
+    }
     console.log(`✓ Restored [${window.class}] ${window.title}`);
     return true;
   }
+
+   async _restoreLastFromStack() {
+     const minimized = this.config.loadMinimizedState();
+     if (minimized.length === 0) return;
+     await this.#restoreWindow(minimized[minimized.length - 1]);
+   }
+
+   async restoreLastWindow() {
+     await this._restoreLastFromStack();
+   }
 
   async showRestoreMenu() {
     const minimized = this.config.loadMinimizedState();
@@ -192,7 +139,6 @@ export class WindowManager {
 
     const launcher = this.config.get('restoreLauncher') || 'rofi';
     const launcherArgs = this.config.get('restoreLauncherArgs') || '-dmenu -p "Restore window:"';
-
     const menuOptions = minimized.map((w, i) => `${i + 1}. [${w.class}] ${w.title}`).join('\n');
 
     try {
@@ -203,18 +149,7 @@ export class WindowManager {
 
       const index = parseInt(selected.split('.')[0]) - 1;
       if (index >= 0 && index < minimized.length) {
-        const window = minimized[index];
-        const targetWs = this.config.get('restoreToCurrentWorkspace')
-          ? await this.socket.getActiveWorkspace()
-          : window.workspace;
-        const result = await this.socket.restoreWindow(window.address, targetWs);
-        if (result.trim() === 'ok') {
-          minimized.splice(index, 1);
-          this.config.saveMinimizedState(minimized);
-          this.stack.remove(window.address);
-          console.log(`✓ Restored [${window.class}] ${window.title}`);
-          return true;
-        }
+        return this.#restoreWindow(minimized[index]);
       }
     } catch {
       return false;
