@@ -223,13 +223,13 @@ export class WindowManager {
       console.log(`✓ Cleaned ${state.length - cleaned.length} stale entries from state`);
     }
 
-    // Build address → [PIDs] from PID files and /proc
+    // Build address → Set<PIDs> from PID files and /proc
     const addrPids = {};
 
     for (const file of fs.readdirSync('/tmp').filter(f => f.startsWith('hyprminimizer-') && f.endsWith('.pid'))) {
       try {
         const pid = parseInt(fs.readFileSync(`/tmp/${file}`, 'utf-8').trim(), 10);
-        (addrPids[file.slice(14, -4)] ??= []).push(pid);
+        (addrPids[file.slice(14, -4)] ??= new Set()).add(pid);
       } catch {}
     }
 
@@ -243,12 +243,13 @@ export class WindowManager {
         if (!cmdline.includes('hyprminimizer')) continue;
         const args = cmdline.split('\0').filter(Boolean);
         if (args[2] === 'minimize' && args[3]?.startsWith('0x'))
-          (addrPids[args[3]] ??= []).push(pid);
+          (addrPids[args[3]] ??= new Set()).add(pid);
       } catch {}
     }
 
     // Kill: not in actualAddresses, or duplicates (keep highest PID)
-    for (const [addr, pids] of Object.entries(addrPids)) {
+    for (const [addr, pidSet] of Object.entries(addrPids)) {
+      const pids = [...pidSet];
       if (!actualAddresses.has(addr)) {
         for (const pid of pids) try { process.kill(pid, 'SIGTERM'); } catch {}
       } else if (pids.length > 1) {
