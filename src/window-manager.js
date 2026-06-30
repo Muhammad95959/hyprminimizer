@@ -68,6 +68,13 @@ export class WindowManager {
     const iconName = iconPack[window.class] || window.class || 'hypr-minimizer';
     const pidFile = `/tmp/hyprminimizer-${window.address}.pid`;
 
+    // If a tray for this address is already alive, don't spawn another
+    try {
+      const existingPid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10);
+      process.kill(existingPid, 0); // signal 0 = check alive
+      return; // still alive, skip
+    } catch {}
+
     let exiting = false;
     const cleanup = async () => {
       if (exiting) return;
@@ -176,15 +183,22 @@ export class WindowManager {
   addToMinimizedList(active) {
     const minimized = this.config.loadMinimizedState();
     const maxWindows = this.config.get('maxMinimizedWindows') || 50;
-    if (minimized.length >= maxWindows) minimized.shift();
 
-    minimized.push({
+    const existing = minimized.findIndex(w => w.address === active.address);
+    const entry = {
       address: active.address,
       class: active.class,
       title: active.title,
       workspace: active.workspace?.id || 1,
       timestamp: Date.now()
-    });
+    };
+
+    if (existing >= 0) {
+      minimized[existing] = entry;
+    } else {
+      if (minimized.length >= maxWindows) minimized.shift();
+      minimized.push(entry);
+    }
 
     this.config.saveMinimizedState(minimized);
   }
@@ -194,23 +208,59 @@ export class WindowManager {
     const actualAddresses = new Set(actualWindows.map(w => w.address));
 
     const state = this.config.loadMinimizedState();
-    const filtered = state.filter(w => actualAddresses.has(w.address));
-    if (filtered.length !== state.length) {
-      this.config.saveMinimizedState(filtered);
-      console.log(`✓ Cleaned ${state.length - filtered.length} stale entries from state`);
+
+    // Deduplicate by address (keep newest)
+    const seen = new Map();
+    for (const w of state) {
+      const existing = seen.get(w.address);
+      if (!existing || (w.timestamp || 0) > (existing.timestamp || 0))
+        seen.set(w.address, w);
+    }
+    const cleaned = [...seen.values()].filter(w => actualAddresses.has(w.address));
+
+    if (cleaned.length !== state.length) {
+      this.config.saveMinimizedState(cleaned);
+      console.log(`✓ Cleaned ${state.length - cleaned.length} stale entries from state`);
     }
 
-    const files = fs.readdirSync('/tmp').filter(f => f.startsWith('hyprminimizer-') && f.endsWith('.pid'));
+    // Build address → [PIDs] from PID files and /proc
+    const addrPids = {};
 
-    for (const file of files) {
-      const addr = file.slice(14, -4);
-      if (actualAddresses.has(addr)) continue;
-
+    for (const file of fs.readdirSync('/tmp').filter(f => f.startsWith('hyprminimizer-') && f.endsWith('.pid'))) {
       try {
         const pid = parseInt(fs.readFileSync(`/tmp/${file}`, 'utf-8').trim(), 10);
-        process.kill(pid, 'SIGTERM');
+        (addrPids[file.slice(14, -4)] ??= []).push(pid);
       } catch {}
-      try { fs.unlinkSync(`/tmp/${file}`); } catch {}
+    }
+
+    for (const entry of fs.readdirSync('/proc')) {
+      if (!/^\d+$/.test(entry)) continue;
+      const pid = parseInt(entry);
+      if (pid === process.pid) continue;
+
+      try {
+        const cmdline = fs.readFileSync(`/proc/${pid}/cmdline`, 'utf-8');
+        if (!cmdline.includes('hyprminimizer')) continue;
+        const args = cmdline.split('\0').filter(Boolean);
+        if (args[2] === 'minimize' && args[3]?.startsWith('0x'))
+          (addrPids[args[3]] ??= []).push(pid);
+      } catch {}
+    }
+
+    // Kill: not in actualAddresses, or duplicates (keep highest PID)
+    for (const [addr, pids] of Object.entries(addrPids)) {
+      if (!actualAddresses.has(addr)) {
+        for (const pid of pids) try { process.kill(pid, 'SIGTERM'); } catch {}
+      } else if (pids.length > 1) {
+        pids.sort((a, b) => b - a);
+        for (const pid of pids.slice(1)) try { process.kill(pid, 'SIGTERM'); } catch {}
+      }
+    }
+
+    // Clean up orphaned PID files
+    for (const file of fs.readdirSync('/tmp').filter(f => f.startsWith('hyprminimizer-') && f.endsWith('.pid'))) {
+      if (!actualAddresses.has(file.slice(14, -4)))
+        try { fs.unlinkSync(`/tmp/${file}`); } catch {}
     }
   }
 }
