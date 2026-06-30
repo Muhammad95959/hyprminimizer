@@ -32,6 +32,7 @@ Commands:
   restore-last          Restore the last minimized window
   menu                  Show interactive restore menu (via rofi)
   list                  List all minimized windows
+  cleanup               Kill stale tray icons (orphaned after restore)
   help                  Show this help message
   generate-config       Generate default config at ~/.config/hyprminimizer/config.json
 ```
@@ -76,7 +77,6 @@ hl.bind("SUPER + SHIFT + M",   restore_minimized)
   "excludeWindowClasses": ["waybar", "mako", "hyprlock"],
   "useDBusTray": true,
   "dbusServiceName": "org.hyprminimizer",
-  "stackBaseDirectory": "/tmp",
   "restoreToCurrentWorkspace": true,
   "iconPack": {
     "firefox": "firefox",
@@ -96,13 +96,12 @@ hl.bind("SUPER + SHIFT + M",   restore_minimized)
 | `excludeWindowClasses` | `["waybar","mako","hyprlock"]` | Window classes to never minimize |
 | `useDBusTray` | `true` | Enable D-Bus tray icons on minimize |
 | `dbusServiceName` | `"org.hyprminimizer"` | D-Bus bus name prefix |
-| `stackBaseDirectory` | `"/tmp"` | Directory for the stack file |
 | `restoreToCurrentWorkspace` | `true` | Restore to focused workspace instead of original |
 | `iconPack` | `{}` | Map window classes to icon names. Falls back to the class name if unset |
 
 ## How it works
 
-`hyprminimizer minimize` grabs the active window, moves it to your current workspace's hidden state, and puts a tray icon via D-Bus. Click the icon to restore the window to your current workspace and focus it. A temp file stack tracks minimized windows per-workspace.
+`hyprminimizer minimize` grabs the active window, moves it to the `special:minimized` workspace, and puts a tray icon via D-Bus. Click the icon to restore the window to your current workspace and focus it. Minimized windows are tracked in `/tmp/hyprminimizer-minimized.json` (auto-cleared on reboot).
 
 ## Requirements
 

@@ -1,4 +1,5 @@
 import { execSync } from 'child_process';
+import fs from 'fs';
 import HyprlandSocket from './hyprland-socket.js';
 import Config from './config.js';
 import { startTraySession } from './dbus/session.js';
@@ -65,13 +66,18 @@ export class WindowManager {
   async minimizeWithTray(window) {
     const iconPack = this.config.get('iconPack') || {};
     const iconName = iconPack[window.class] || window.class || 'hypr-minimizer';
-    
+    const pidFile = `/tmp/hyprminimizer-${window.address}.pid`;
+
     let exiting = false;
     const cleanup = async () => {
       if (exiting) return;
       exiting = true;
+      try { fs.unlinkSync(pidFile); } catch {}
+      clearInterval(pollInterval);
       setImmediate(() => process.exit(0));
     };
+
+    try { fs.writeFileSync(pidFile, String(process.pid)); } catch {}
 
     await startTraySession(this.config, {
       iconName,
@@ -181,6 +187,31 @@ export class WindowManager {
     });
 
     this.config.saveMinimizedState(minimized);
+  }
+
+  async cleanupTray() {
+    const actualWindows = await this.socket.getMinimizedWindows();
+    const actualAddresses = new Set(actualWindows.map(w => w.address));
+
+    const state = this.config.loadMinimizedState();
+    const filtered = state.filter(w => actualAddresses.has(w.address));
+    if (filtered.length !== state.length) {
+      this.config.saveMinimizedState(filtered);
+      console.log(`✓ Cleaned ${state.length - filtered.length} stale entries from state`);
+    }
+
+    const files = fs.readdirSync('/tmp').filter(f => f.startsWith('hyprminimizer-') && f.endsWith('.pid'));
+
+    for (const file of files) {
+      const addr = file.slice(14, -4);
+      if (actualAddresses.has(addr)) continue;
+
+      try {
+        const pid = parseInt(fs.readFileSync(`/tmp/${file}`, 'utf-8').trim(), 10);
+        process.kill(pid, 'SIGTERM');
+      } catch {}
+      try { fs.unlinkSync(`/tmp/${file}`); } catch {}
+    }
   }
 }
 

@@ -39,6 +39,10 @@ async function main() {
         await manager.listMinimized();
         process.exit(0);
 
+      case 'cleanup':
+        await manager.cleanupTray();
+        process.exit(0);
+
       case 'help':
         showHelp();
         process.exit(0);
@@ -71,6 +75,7 @@ COMMANDS:
   restore-last          Restore the last minimized window
   menu                  Show interactive menu to restore a window
   list                  List all minimized windows
+  cleanup               Kill stale tray icons (orphaned after restore)
   help                  Show this help message
   generate-config       Generate a default configuration file
 
@@ -89,6 +94,9 @@ EXAMPLES:
 
   # List minimized windows
   hyprminimizer list
+
+  # Clean up stale tray icons
+  hyprminimizer cleanup
 
 CONFIGURATION:
   Config file location: ~/.config/hyprminimizer/config.json
