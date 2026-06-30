@@ -6,7 +6,7 @@ export class Config {
   constructor() {
     this.configDir = path.join(os.homedir(), '.config', 'hyprminimizer');
     this.configFile = path.join(this.configDir, 'config.json');
-    this.stateFile = path.join(this.configDir, 'minimized-windows.json');
+    this.stateFile = '/tmp/hyprminimizer-minimized.json';
     this.config = this.#loadConfig();
   }
 

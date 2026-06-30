@@ -92,7 +92,7 @@ EXAMPLES:
 
 CONFIGURATION:
   Config file location: ~/.config/hyprminimizer/config.json
-  State file location: ~/.config/hyprminimizer/minimized-windows.json
+  State file location: /tmp/hyprminimizer-minimized.json (cleared on reboot)
 
 KEYBINDINGS (hyprland.lua):
   -- Minimize active window
