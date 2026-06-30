@@ -80,7 +80,6 @@ export class WindowManager {
       if (exiting) return;
       exiting = true;
       try { fs.unlinkSync(pidFile); } catch {}
-      clearInterval(pollInterval);
       setImmediate(() => process.exit(0));
     };
 
@@ -98,15 +97,6 @@ export class WindowManager {
 
     process.on('SIGINT', cleanup);
     process.on('SIGTERM', cleanup);
-
-    // Poll: if minimized window is manually restored, cleanup and exit
-    const pollInterval = setInterval(async () => {
-      const minimized = this.config.loadMinimizedState();
-      if (!minimized.some(w => w.address === window.address)) {
-        clearInterval(pollInterval);
-        await cleanup();
-      }
-    }, 2000);
 
     // Keep process alive
     await new Promise(() => {});
@@ -130,6 +120,15 @@ export class WindowManager {
       this.config.saveMinimizedState(minimized);
     }
     console.log(`✓ Restored [${window.class}] ${window.title}`);
+
+    // Kill the tray for this window
+    const pidFile = `/tmp/hyprminimizer-${window.address}.pid`;
+    try {
+      const pid = parseInt(fs.readFileSync(pidFile, 'utf-8').trim(), 10);
+      process.kill(pid, 'SIGTERM');
+    } catch {}
+    try { fs.unlinkSync(pidFile); } catch {}
+
     return true;
   }
 
